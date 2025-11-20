@@ -1,69 +1,94 @@
-using GasMonitor.Api.Data; // <-- ALTERAÇÃO: Precisamos disto para usar o DbContext
-using GasMonitor.Api.Models; 
+using GasMonitor.Api.Data;
+using GasMonitor.Api.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore; // <-- IMPORTANTE: Necessário para o ToListAsync
 
 namespace GasMonitor.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")] 
+    [Route("api/[controller]")]
     public class MedicoesController : ControllerBase
     {
-        // --- ALTERAÇÃO 1: Substituir o "Logger" pelo "DbContext" ---
-        
-        // Removemos o ILogger temporário
-        // private readonly ILogger<MedicoesController> _logger;
-        
-        // Adicionamos o nosso contexto do banco de dados
         private readonly ApplicationDbContext _contexto;
 
-        // O .NET vai "injetar" (entregar) o DbContext automaticamente aqui
         public MedicoesController(ApplicationDbContext contexto)
         {
             _contexto = contexto;
         }
 
-        // --- Fim da ALTERAÇÃO 1 ---
-
         /// <summary>
-        /// Endpoint para receber novas medições de peso dos dispositivos.
+        /// Endpoint para receber novas medições (POST).
         /// </summary>
-        [HttpPost] 
-        // --- ALTERAÇÃO 2: Tornar o método "Assíncrono" ---
+        [HttpPost]
         public async Task<IActionResult> ReceberMedicao([FromBody] MedicaoInput medicaoInput)
         {
-            // Validação simples
             if (medicaoInput.PesoKg <= 0)
             {
                 return BadRequest("Peso inválido. O valor deve ser maior que zero.");
             }
 
-            // --- ALTERAÇÃO 3: Mapear e Salvar no Banco ---
-
-            // 1. "Mapear" os dados do "Input" para o nosso modelo de Banco de Dados
-            // O "Input" (MedicaoInput) não tem "Id" nem "DataHoraRegisto".
-            // O "Modelo" (Medicao) precisa desses dados.
             var novaMedicao = new Medicao
             {
                 IdDispositivo = medicaoInput.IdDispositivo,
                 PesoKg = medicaoInput.PesoKg,
-                // Definimos o carimbo de data/hora no servidor, para ser mais fiável
-                DataHoraRegisto = DateTime.UtcNow 
+                DataHoraRegisto = DateTime.UtcNow
             };
 
-            // 2. Adicionar o novo objeto ao "contexto" do EF Core
-            // (Isto ainda não guarda no banco, apenas "prepara" a mudança)
             _contexto.Medicoes.Add(novaMedicao);
-
-            // 3. Salvar as mudanças no banco de dados
-            // Esta é a linha que executa o "INSERT INTO..."
             await _contexto.SaveChangesAsync();
 
-            // --- Fim da ALTERAÇÃO 3 ---
-            
-            // Em vez de "Ok(...)", devolvemos "CreatedAtAction" (Boas Práticas de API)
-            // Isto devolve um código "201 Created" e diz ao cliente onde 
-            // encontrar o novo recurso (embora ainda não tenhamos criado esse endpoint GET)
-            return CreatedAtAction(null, new { id = novaMedicao.Id });
+            return CreatedAtAction(nameof(GetTodasMedicoes), new { id = novaMedicao.Id }, novaMedicao);
+        }
+
+
+        /// <summary>
+        /// Endpoint para LER todo o histórico de medições (GET).
+        /// URL: GET /api/medicoes
+        /// </summary>
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<MedicaoResponse>>> GetTodasMedicoes()
+        {
+            // 1. Busca os dados brutos no banco
+            var medicoesBrutas = await _contexto.Medicoes
+                                               .OrderByDescending(m => m.DataHoraRegisto)
+                                               .ToListAsync();
+
+            // 2. Cria a lista de resposta transformando os dados
+            var listaResposta = new List<MedicaoResponse>();
+
+            // Constantes do P13 (poderiam vir de uma configuração no futuro)
+            const double PESO_TARA = 15.0; // Peso do botijão vazio
+            const double PESO_GAS_TOTAL = 13.0; // Capacidade total de gás
+
+            foreach (var item in medicoesBrutas)
+            {
+                // Lógica de Cálculo
+                double pesoDoGasAtual = item.PesoKg - PESO_TARA;
+                
+                // Se o peso for menor que a tara, assumimos 0 (para não dar negativo)
+                if (pesoDoGasAtual < 0) pesoDoGasAtual = 0;
+
+                // Regra de 3 para achar a percentagem
+                double porcentagem = (pesoDoGasAtual / PESO_GAS_TOTAL) * 100;
+
+                // Define um Status amigável
+                string statusTexto = "Normal";
+                if (porcentagem > 100) statusTexto = "Sobrecarregado"; // Erro de leitura ou tara errada
+                else if (porcentagem <= 0) statusTexto = "Vazio";
+                else if (porcentagem < 20) statusTexto = "Atenção: Gás no Fim!";
+
+                listaResposta.Add(new MedicaoResponse
+                {
+                    Id = item.Id,
+                    IdDispositivo = item.IdDispositivo,
+                    PesoTotalKg = item.PesoKg,
+                    DataHora = item.DataHoraRegisto,
+                    PorcentagemGas = (int)porcentagem, // Arredonda para inteiro
+                    Status = statusTexto
+                });
+            }
+
+            return Ok(listaResposta);
         }
     }
 }
