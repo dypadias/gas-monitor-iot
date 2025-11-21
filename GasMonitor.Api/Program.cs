@@ -1,28 +1,36 @@
-using GasMonitor.Api.Data;      // <--- ADICIONADO PARA CORRIGIR O ERRO CS0246
-using Microsoft.EntityFrameworkCore; // <--- ADICIONADO PARA CORRIGIR O ERRO CS1061
+using GasMonitor.Api.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Vamos ler a string de conexão do nosso ficheiro appsettings.json
+// Ler a string de conexão
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// --- ADICIONADO ---
-// 1. Adiciona os serviços para os "Controllers".
-// Isto faz com que o .NET procure e reconheça o seu "MedicoesController.cs".
 builder.Services.AddControllers();
 
-// Diz ao .NET para usar o EF Core com o PostgreSQL, usando a string de conexão
+// Configurar Banco de Dados
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// --- ALTERAÇÃO 1: Adicionar o Serviço de CORS ---
+// Estamos a criar uma política chamada "PermitirTudo" (útil para desenvolvimento)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("PermitirTudo",
+        policy =>
+        {
+            policy.AllowAnyOrigin()  // Aceita pedidos de qualquer site/IP
+                  .AllowAnyMethod()  // Aceita GET, POST, PUT, DELETE
+                  .AllowAnyHeader(); // Aceita qualquer tipo de cabeçalho
+        });
+});
+// ------------------------------------------------
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -31,11 +39,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// --- ALTERAÇÃO 2: Ativar o CORS ---
+// IMPORTANTE: Tem de ser ANTES de "UseAuthorization" e "MapControllers"
+app.UseCors("PermitirTudo"); 
+// ----------------------------------
+
 app.UseAuthorization();
 
-// --- ADICIONADO ---
-// 2. Mapeia (ativa) os Controllers que foram encontrados.
-// Isto ativa as rotas (URLs) definidas no seu "MedicoesController".
 app.MapControllers();
 
 app.Run();
