@@ -48,28 +48,28 @@ namespace GasMonitor.Api.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MedicaoResponse>>> GetTodasMedicoes()
         {
-            // 1. Busca os dados brutos no banco
+            // 1. Buscar Configuração Ativa
+            var produtoAtivo = await _contexto.ProdutosConfig.FirstOrDefaultAsync(p => p.Ativo);
+            
+            // Valores padrão se não houver config (Fallback)
+            double pesoTara = produtoAtivo?.TaraKg ?? 15.0;
+            double capacidadeTotal = produtoAtivo?.CapacidadeTotalKg ?? 13.0;
+
+            // 2. Buscar medições
             var medicoesBrutas = await _contexto.Medicoes
                                                .OrderByDescending(m => m.DataHoraRegisto)
                                                .ToListAsync();
 
-            // 2. Cria a lista de resposta transformando os dados
             var listaResposta = new List<MedicaoResponse>();
-
-            // Constantes do P13 (poderiam vir de uma configuração no futuro)
-            const double PESO_TARA = 15.0; // Peso do botijão vazio
-            const double PESO_GAS_TOTAL = 13.0; // Capacidade total de gás
 
             foreach (var item in medicoesBrutas)
             {
-                // Lógica de Cálculo
-                double pesoDoGasAtual = item.PesoKg - PESO_TARA;
+                // Lógica de Cálculo usando as VARIÁVEIS do banco
+                double pesoDoGasAtual = item.PesoKg - pesoTara;
                 
-                // Se o peso for menor que a tara, assumimos 0 (para não dar negativo)
                 if (pesoDoGasAtual < 0) pesoDoGasAtual = 0;
 
-                // Regra de 3 para achar a percentagem
-                double porcentagem = (pesoDoGasAtual / PESO_GAS_TOTAL) * 100;
+                double porcentagem = (pesoDoGasAtual / capacidadeTotal) * 100;
 
                 // Define um Status amigável
                 string statusTexto = "Normal";

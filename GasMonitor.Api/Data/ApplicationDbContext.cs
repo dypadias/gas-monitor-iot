@@ -12,5 +12,7 @@ namespace GasMonitor.Api.Data
 
         // Mapeia a nossa classe "Medicao" para uma tabela chamada "Medicoes"
         public DbSet<Medicao> Medicoes { get; set; }
+
+        public DbSet<ProdutoConfig> ProdutosConfig { get; set; }
     }
 }
