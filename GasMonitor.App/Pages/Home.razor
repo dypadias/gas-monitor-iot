@@ -1,0 +1,386 @@
+﻿@page "/"
+@using GasMonitor.App.Models
+@using GasMonitor.App.Layout
+@inject HttpClient Http
+@inject IJSRuntime JS
+@implements IDisposable
+
+<PageTitle>SmartGás | Monitor Inteligente</PageTitle>
+
+@if (mostrarModalTroca)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">🔄 Fim do Gás Detectado</h5>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3 text-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-cart-check" viewBox="0 0 16 16">
+                            <path d="M11.354 6.354a.5.5 0 0 0-.708-.708L8 8.293 6.854 7.146a.5.5 0 1 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0l3-3z"/>
+                            <path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1H.5zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+                        </svg>
+                    </div>
+                    <p class="lead fw-bold">O seu botijão esvaziou.</p>
+                    <p class="text-muted">Para mantermos o controle financeiro preciso, informe quanto pagou na recarga:</p>
+                    
+                    <div class="form-floating mt-4 mb-3">
+                        <input type="number" class="form-control fs-3 fw-bold text-center text-primary" 
+                               @bind="precoNovaTroca" step="0.01" id="precoInput" />
+                        <label for="precoInput">Valor Pago (R$)</label>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center bg-light">
+                    <button type="button" class="btn btn-lg btn-primary px-5 rounded-pill shadow-sm" 
+                            @onclick="ConfirmarTroca">
+                        Confirmar Troca & Zerar Ciclo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ultimaLeitura != null && ultimaLeitura.AlertaVazamento)
+{
+    <div class="alerta-vazamento-overlay">
+        <div class="alerta-box">
+            <div class="display-1 mb-3">🚨</div>
+            <h1>PERIGO IMEDIATO</h1>
+            <h2 class="mb-4">VAZAMENTO DE GÁS DETECTADO</h2>
+            <p class="fs-5">O sensor MQ-2 identificou níveis perigosos de GLP no ambiente.</p>
+            <hr/>
+            <div class="text-start d-inline-block mt-3">
+                <p class="fw-bold mb-2">PROTOCOLO DE SEGURANÇA:</p>
+                <p class="mb-1">1. Feche a válvula do botijão imediatamente.</p>
+                <p class="mb-1">2. Abra todas as janelas e portas para ventilação.</p>
+                <p class="mb-1">3. NÃO acenda luzes nem use interruptores elétricos.</p>
+                <p class="mb-0">4. Evacue o local se o cheiro for forte.</p>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="container-fluid p-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 style="font-weight: 700; color: #2c3e50;">SmartGás <span style="font-weight: 300;">Monitor</span></h2>
+            <span class="text-muted">Gestão Inteligente & Segurança Residencial</span>
+        </div>
+        
+        <div class="bg-white px-4 py-2 rounded-pill shadow-sm d-flex align-items-center">
+            <span class="me-3 text-primary fw-bold fs-4">📦</span>
+            <div>
+                <small class="d-block text-muted" style="font-size: 0.7rem; line-height: 1; text-transform: uppercase;">Configuração Ativa</small>
+                <strong style="color: #2c3e50;">@nomeProdutoAtivo</strong>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(mensagemErro))
+    {
+        <div class="alert alert-warning shadow-sm border-0 d-flex align-items-center">
+            <span class="me-2 fs-4">⚠️</span>
+            <div>
+                <strong>Atenção:</strong> @mensagemErro
+            </div>
+        </div>
+    }
+
+    @if (ultimaLeitura != null)
+    {
+        <div class="row g-4">
+            
+            <div class="col-lg-3">
+                <div class="card-moderno h-100 d-flex flex-column align-items-center text-center bg-white">
+                    <h5 class="text-muted mb-5 text-uppercase fs-6 fw-bold" style="letter-spacing: 1px;">Nível em Tempo Real</h5>
+                    
+                    <div class="mb-4">
+                        <BotijaoVisual Porcentagem="@ultimaLeitura.PorcentagemGas" />
+                    </div>
+                    
+                    <div class="mt-auto pt-4 w-100">
+                        <div class="status-badge @ClasseCorStatus(ultimaLeitura.PorcentagemGas)">
+                            @ultimaLeitura.Status
+                        </div>
+                        <small class="text-muted mt-3 d-block" style="font-size: 0.75rem;">
+                            Última leitura: @ultimaLeitura.DataHora.ToLocalTime().ToString("HH:mm:ss")
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-9">
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card-info">
+                            <div class="icon-bg text-info bg-info-subtle"><span>📅</span></div>
+                            <div>
+                                <span class="label-dado">Previsão de Término</span>
+                                <h3 class="mb-0">@ultimaLeitura.DiasRestantesEstimados <small class="fs-6 text-muted">dias</small></h3>
+                                <small class="text-muted" style="font-size: 0.75rem;">Baseado no consumo médio</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card-info">
+                            <div class="icon-bg text-warning bg-warning-subtle"><span>💸</span></div>
+                            <div>
+                                <span class="label-dado">Custo Atual</span>
+                                <h3 class="mb-0">R$ @ultimaLeitura.ValorGasto</h3>
+                                <small class="text-muted" style="font-size: 0.75rem;">Valor consumido até agora</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card-info">
+                            <div class="icon-bg text-success bg-success-subtle"><span>💰</span></div>
+                            <div>
+                                <span class="label-dado">Valor em Reserva</span>
+                                <h3 class="mb-0 text-success">R$ @ultimaLeitura.ValorRestante</h3>
+                                <small class="text-muted" style="font-size: 0.75rem;">Ainda disponível no botijão</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <SmartAdvisor Stats="@statsParaDicas" UltimaLeitura="@ultimaLeitura" />
+
+                <div class="row g-3 mt-2">
+                    
+                    <div class="col-md-8">
+                        <div class="card-moderno" style="min-height: 300px;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="label-dado fw-bold">Curva de Consumo</span>
+                                <span class="badge bg-light text-dark border">Últimas 20 leituras</span>
+                            </div>
+                            <div style="height: 250px; width: 100%;">
+                                <canvas id="graficoGas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card-moderno h-100 d-flex flex-column justify-content-center">
+                            <span class="label-dado mb-4 fw-bold">Telemetria</span>
+                            
+                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                <span class="text-muted">Peso Bruto</span>
+                                <strong>@ultimaLeitura.PesoTotalKg Kg</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                <span class="text-muted">Média Diária</span>
+                                <strong>@(statsParaDicas?.MediaConsumoDiarioKg.ToString("F3") ?? "0.200") Kg</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                                <span class="text-muted">ID Sensor</span>
+                                <small class="text-dark text-break">@ultimaLeitura.IdDispositivo</small>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                <span class="text-muted small">Detector de Gás</span>
+                                @if(ultimaLeitura.AlertaVazamento)
+                                { <strong class="text-danger animate-pulse">DETECTADO ⚠️</strong> }
+                                else
+                                { <strong class="text-success small">Normal (0ppm)</strong> }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        
+        <div class="text-center mt-5 mb-5">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="AtualizarDados">
+                <span class="oi oi-reload me-1"></span> Forçar Atualização de Dados
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-column justify-content-center align-items-center" style="height: 60vh;">
+            <div class="spinner-grow text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+            <h4 class="text-dark fw-bold">Conectando ao dispositivo IoT...</h4>
+            <p class="text-muted">Aguardando primeira leitura do ESP32</p>
+        </div>
+    }
+</div>
+
+<style>
+    /* Backgrounds suaves para os ícones */
+    .bg-info-subtle { background-color: rgba(13, 202, 240, 0.1); }
+    .bg-warning-subtle { background-color: rgba(255, 193, 7, 0.1); }
+    .bg-success-subtle { background-color: rgba(25, 135, 84, 0.1); }
+
+    /* Card de Informação (Topo) */
+    .card-info {
+        background: white;
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.03);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid rgba(0,0,0,0.02);
+    }
+    .card-info:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+    }
+
+    .icon-bg {
+        width: 60px; height: 60px; border-radius: 15px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem;
+    }
+
+    /* Badges de Status */
+    .status-badge {
+        padding: 12px; border-radius: 12px; font-weight: 800;
+        text-transform: uppercase; letter-spacing: 1.5px; background-color: #f8f9fa;
+    }
+    .status-badge.text-success { background-color: rgba(25, 135, 84, 0.1); color: #198754; }
+    .status-badge.text-warning { background-color: rgba(255, 193, 7, 0.1); color: #ffc107; }
+    .status-badge.text-danger { background-color: rgba(220, 53, 69, 0.1); color: #dc3545; }
+
+    /* Overlay de Emergência */
+    .alerta-vazamento-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(220, 53, 69, 0.95); z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        animation: flash 1.5s infinite;
+    }
+    .alerta-box {
+        background: white; padding: 50px; border-radius: 30px;
+        text-align: center; color: #dc3545; box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        max-width: 600px; width: 90%;
+    }
+    
+    /* Animações */
+    @@keyframes flash { 0% { opacity: 0.95; } 50% { opacity: 1; } 100% { opacity: 0.95; } }
+    .animate-pulse { animation: pulse 1s infinite; }
+    @@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+</style>
+
+@code {
+    // Variáveis de Estado
+    private MedicaoResponse? ultimaLeitura;
+    private EstatisticasResponse? statsParaDicas; // <--- Variável para o SmartAdvisor
+    private string nomeProdutoAtivo = "A carregar...";
+    private string mensagemErro = "";
+    
+    // Controle de Tempo
+    private PeriodicTimer? _timer;
+    private CancellationTokenSource _cts = new CancellationTokenSource();
+
+    // Controle do Modal de Troca
+    private bool mostrarModalTroca = false;
+    private bool trocaJaSolicitada = false;
+    private decimal precoNovaTroca = 0;
+
+    // Inicialização
+    protected override async Task OnInitializedAsync()
+    {
+        await AtualizarDados();
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(3)); // Atualiza a cada 3s
+        _ = ExecutarLoopAtualizacao();
+    }
+
+    // Loop Infinito (Background)
+    private async Task ExecutarLoopAtualizacao()
+    {
+        try 
+        {
+            while (await _timer.WaitForNextTickAsync(_cts.Token))
+            {
+                await AtualizarDados();
+                StateHasChanged(); // Redesenha a tela
+            }
+        }
+        catch (OperationCanceledException) { /* Normal ao fechar */ }
+    }
+
+    // Lógica Central de Dados
+    private async Task AtualizarDados()
+    {
+        try
+        {
+            mensagemErro = "";
+            
+            // 1. Busca Configuração Ativa
+            var config = await Http.GetFromJsonAsync<ProdutoConfig>("api/produtos/ativo");
+            nomeProdutoAtivo = config?.Nome ?? "Desconhecido";
+
+            // 2. Busca Últimas Medições
+            var dados = await Http.GetFromJsonAsync<List<MedicaoResponse>>("api/medicoes");
+
+            if (dados != null && dados.Count > 0)
+            {
+                ultimaLeitura = dados[0];
+
+                // 3. Busca Estatísticas (Para o Smart Advisor)
+                // Usamos try-catch isolado para não bloquear o resto se a estatística falhar
+                try 
+                {
+                    statsParaDicas = await Http.GetFromJsonAsync<EstatisticasResponse>("api/estatisticas");
+                } 
+                catch { /* Ignora erro estatístico temporariamente */ }
+
+                // 4. Lógica de Troca de Botijão (Popup)
+                if (ultimaLeitura.PorcentagemGas <= 0 && !trocaJaSolicitada)
+                {
+                    // Sugere o último preço pago
+                    precoNovaTroca = config?.PrecoPago ?? 0;
+                    mostrarModalTroca = true;
+                    trocaJaSolicitada = true;
+                }
+                else if (ultimaLeitura.PorcentagemGas > 50)
+                {
+                    // Reseta se o botijão estiver cheio novamente
+                    trocaJaSolicitada = false;
+                }
+
+                // 5. Atualiza o Gráfico (JS)
+                var labels = dados.Take(20).Reverse().Select(d => d.DataHora.ToLocalTime().ToString("HH:mm:ss")).ToArray();
+                var valores = dados.Take(20).Reverse().Select(d => d.PorcentagemGas).ToArray();
+                await JS.InvokeVoidAsync("desenharGrafico", labels, valores);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro: {ex.Message}");
+            // Em produção, logamos o erro mas não mostramos na UI durante o loop para evitar "flicker"
+        }
+    }
+
+    // Ação do Botão do Modal
+    private async Task ConfirmarTroca()
+    {
+        var novaTroca = new { PrecoPago = precoNovaTroca, NomeProduto = nomeProdutoAtivo };
+        
+        // Salva a troca no histórico
+        await Http.PostAsJsonAsync("api/trocas", novaTroca);
+        
+        mostrarModalTroca = false;
+        
+        // Força atualização imediata
+        await AtualizarDados();
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _timer?.Dispose();
+    }
+
+    // Helper Visual
+    private string ClasseCorStatus(int p) => p < 20 ? "text-danger" : (p < 50 ? "text-warning" : "text-success");
+}

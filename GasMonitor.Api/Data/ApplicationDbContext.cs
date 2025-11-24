@@ -6,13 +6,13 @@ namespace GasMonitor.Api.Data
     public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
+            : base(options) { }
 
         // Mapeia a nossa classe "Medicao" para uma tabela chamada "Medicoes"
         public DbSet<Medicao> Medicoes { get; set; }
 
         public DbSet<ProdutoConfig> ProdutosConfig { get; set; }
+
+        public DbSet<HistoricoTroca> HistoricoTrocas { get; set; }
     }
 }

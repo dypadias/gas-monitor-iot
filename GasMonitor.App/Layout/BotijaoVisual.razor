@@ -1,0 +1,115 @@
+<div class="botijao-container">
+    <div class="botijao-alca"></div>
+    
+    <div class="botijao-corpo">
+        <div class="liquido" style="height: @Porcentagem%; background-color: @CorLiquido;">
+            <div class="bolhas"></div>
+        </div>
+        
+        <div class="regua">
+            <span>100%</span>
+            <span>50%</span>
+            <span>0%</span>
+        </div>
+    </div>
+    
+    <div class="texto-porcentagem">@Porcentagem%</div>
+</div>
+
+@code {
+    [Parameter]
+    public int Porcentagem { get; set; }
+
+    // Lógica de cor: Vermelho se < 20%, Laranja se < 50%, Azul (Gás) se normal
+    private string CorLiquido => Porcentagem < 20 ? "#e74c3c" : (Porcentagem < 50 ? "#f39c12" : "#3498db");
+}
+
+<style>
+    .botijao-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 120px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    /* A parte de cima (pega/alça) */
+    .botijao-alca {
+        width: 60px;
+        height: 20px;
+        border: 4px solid #7f8c8d;
+        border-bottom: none;
+        border-radius: 10px 10px 0 0;
+        margin-bottom: 2px;
+        position: relative;
+    }
+    /* Detalhe da válvula */
+    .botijao-alca::after {
+        content: '';
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 10px;
+        height: 15px;
+        background: #95a5a6;
+    }
+
+    /* O corpo principal */
+    .botijao-corpo {
+        width: 100px;
+        height: 180px;
+        background-color: #ecf0f1; /* Cor de fundo (vazio) */
+        border: 2px solid #bdc3c7;
+        border-radius: 15px;
+        position: relative;
+        overflow: hidden; /* Impede o líquido de sair pelas bordas */
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.1); /* Sombra interna 3D */
+    }
+
+    /* O Líquido */
+    .liquido {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        /* A transição faz o nível descer suavemente em vez de pular */
+        transition: height 1.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 1s ease;
+        box-shadow: 0 -5px 10px rgba(0,0,0,0.1);
+    }
+
+    /* Efeito de superfície do líquido */
+    .liquido::before {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: 0;
+        width: 100%;
+        height: 10px;
+        background-color: rgba(255,255,255,0.3);
+        border-radius: 50%;
+    }
+
+    /* Régua lateral */
+    .regua {
+        position: absolute;
+        right: 5px;
+        top: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 10px 0;
+        font-size: 10px;
+        color: #95a5a6;
+        pointer-events: none; /* Clica através dela */
+    }
+
+    .texto-porcentagem {
+        margin-top: 10px;
+        font-weight: bold;
+        font-size: 1.2rem;
+        color: #2c3e50;
+    }
+</style>

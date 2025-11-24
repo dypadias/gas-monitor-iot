@@ -1,7 +1,7 @@
 using GasMonitor.Api.Data;
 using GasMonitor.Api.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; // <-- IMPORTANTE: Necessário para o ToListAsync
+using Microsoft.EntityFrameworkCore;
 
 namespace GasMonitor.Api.Controllers
 {
@@ -16,9 +16,6 @@ namespace GasMonitor.Api.Controllers
             _contexto = contexto;
         }
 
-        /// <summary>
-        /// Endpoint para receber novas medições (POST).
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> ReceberMedicao([FromBody] MedicaoInput medicaoInput)
         {
@@ -31,61 +28,103 @@ namespace GasMonitor.Api.Controllers
             {
                 IdDispositivo = medicaoInput.IdDispositivo,
                 PesoKg = medicaoInput.PesoKg,
-                DataHoraRegisto = DateTime.UtcNow
+                VazamentoDetectado = medicaoInput.TemVazamento,
+                DataHoraRegisto = DateTime.UtcNow,
             };
 
             _contexto.Medicoes.Add(novaMedicao);
             await _contexto.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetTodasMedicoes), new { id = novaMedicao.Id }, novaMedicao);
+            return CreatedAtAction(
+                nameof(GetTodasMedicoes),
+                new { id = novaMedicao.Id },
+                novaMedicao
+            );
         }
 
-
-        /// <summary>
-        /// Endpoint para LER todo o histórico de medições (GET).
-        /// URL: GET /api/medicoes
-        /// </summary>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MedicaoResponse>>> GetTodasMedicoes()
         {
-            // 1. Buscar Configuração Ativa
             var produtoAtivo = await _contexto.ProdutosConfig.FirstOrDefaultAsync(p => p.Ativo);
-            
-            // Valores padrão se não houver config (Fallback)
+
             double pesoTara = produtoAtivo?.TaraKg ?? 15.0;
             double capacidadeTotal = produtoAtivo?.CapacidadeTotalKg ?? 13.0;
+            decimal precoBotijao = produtoAtivo?.PrecoPago ?? 0;
 
-            // 2. Buscar medições
-            var medicoesBrutas = await _contexto.Medicoes
-                                               .OrderByDescending(m => m.DataHoraRegisto)
-                                               .ToListAsync();
+            var medicoesBrutas = await _contexto
+                .Medicoes.OrderByDescending(m => m.DataHoraRegisto)
+                .ToListAsync();
 
             var listaResposta = new List<MedicaoResponse>();
+            double consumoDiarioMedio = 0.2;
 
             foreach (var item in medicoesBrutas)
             {
-                // Lógica de Cálculo usando as VARIÁVEIS do banco
                 double pesoDoGasAtual = item.PesoKg - pesoTara;
-                
-                if (pesoDoGasAtual < 0) pesoDoGasAtual = 0;
-
-                double porcentagem = (pesoDoGasAtual / capacidadeTotal) * 100;
-
-                // Define um Status amigável
-                string statusTexto = "Normal";
-                if (porcentagem > 100) statusTexto = "Sobrecarregado"; // Erro de leitura ou tara errada
-                else if (porcentagem <= 0) statusTexto = "Vazio";
-                else if (porcentagem < 20) statusTexto = "Atenção: Gás no Fim!";
-
-                listaResposta.Add(new MedicaoResponse
+                if (pesoDoGasAtual < 0)
                 {
-                    Id = item.Id,
-                    IdDispositivo = item.IdDispositivo,
-                    PesoTotalKg = item.PesoKg,
-                    DataHora = item.DataHoraRegisto,
-                    PorcentagemGas = (int)porcentagem, // Arredonda para inteiro
-                    Status = statusTexto
-                });
+                    pesoDoGasAtual = 0;
+                }
+
+                double porcentagem = 0;
+                if (capacidadeTotal > 0)
+                {
+                    porcentagem = (pesoDoGasAtual / capacidadeTotal) * 100;
+                }
+
+                decimal valorDoGasAtual = 0;
+                if (capacidadeTotal > 0 && precoBotijao > 0)
+                {
+                    valorDoGasAtual =
+                        (decimal)pesoDoGasAtual * (precoBotijao / (decimal)capacidadeTotal);
+                }
+
+                decimal valorQueimado = precoBotijao - valorDoGasAtual;
+                if (valorQueimado < 0)
+                {
+                    valorQueimado = 0;
+                }
+
+                int diasRestantes = 0;
+                if (consumoDiarioMedio > 0 && pesoDoGasAtual > 0)
+                {
+                    diasRestantes = (int)(pesoDoGasAtual / consumoDiarioMedio);
+                }
+
+                string statusTexto = "Normal";
+
+                if (item.VazamentoDetectado)
+                {
+                    statusTexto = "PERIGO: VAZAMENTO!";
+                }
+                else if (porcentagem > 110)
+                {
+                    statusTexto = "Sobrecarregado / Erro Tara";
+                }
+                else if (porcentagem <= 0)
+                {
+                    statusTexto = "Vazio";
+                }
+                else if (porcentagem < 20)
+                {
+                    statusTexto = "Reserva (Atenção)";
+                }
+
+                listaResposta.Add(
+                    new MedicaoResponse
+                    {
+                        Id = item.Id,
+                        IdDispositivo = item.IdDispositivo,
+                        PesoTotalKg = item.PesoKg,
+                        DataHora = item.DataHoraRegisto,
+                        PorcentagemGas = (int)porcentagem,
+                        Status = statusTexto,
+                        ValorRestante = Math.Round(valorDoGasAtual, 2),
+                        ValorGasto = Math.Round(valorQueimado, 2),
+                        DiasRestantesEstimados = diasRestantes,
+                        AlertaVazamento = item.VazamentoDetectado,
+                    }
+                );
             }
 
             return Ok(listaResposta);

@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+:root {
+    --primary: #4e73df;
+    --bg-color: #f8f9fc;
+    --card-bg: #ffffff;
+    --text-dark: #2c3e50;
+    --text-muted: #858796;
+    --success: #1cc88a;
+    --warning: #f6c23e;
+    --danger: #e74a3b;
+    --radius: 20px;
+    --shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-dark);
+}
+
+/* Sidebar Moderna */
+.sidebar {
+    background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
+    box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+}
+.sidebar .nav-item a {
+    color: rgba(255,255,255,0.8);
+    border-radius: 10px;
+    margin: 5px 10px;
+    transition: all 0.3s;
+}
+.sidebar .nav-item a:hover, .sidebar .nav-item a.active {
+    background-color: rgba(255,255,255,0.2);
+    color: white;
+    font-weight: 600;
+}
+
+/* Cards Modernos */
+.card-moderno {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    border: none;
+    box-shadow: var(--shadow);
+    padding: 25px;
+    height: 100%;
+    transition: transform 0.2s;
+}
+.card-moderno:hover {
+    transform: translateY(-5px);
+}
+
+/* Títulos e Textos */
+h1 { font-weight: 700; color: var(--text-dark); margin-bottom: 5px; }
+h3 { font-weight: 600; margin: 0; }
+.subtitulo { color: var(--text-muted); font-size: 0.9rem; font-weight: 400; }
+.label-dado { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+/* Status Cores */
+.text-success { color: var(--success) !important; }
+.text-warning { color: var(--warning) !important; }
+.text-danger { color: var(--danger) !important; }
+
+/* Botão Moderno */
+.btn-moderno {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 50px;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(78, 115, 223, 0.4);
+    transition: all 0.3s;
+}
+.btn-moderno:hover {
+    background: #375a7f;
+    box-shadow: 0 6px 20px rgba(78, 115, 223, 0.6);
+}

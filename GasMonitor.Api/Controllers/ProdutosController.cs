@@ -16,33 +16,34 @@ namespace GasMonitor.Api.Controllers
             _contexto = contexto;
         }
 
-        // GET: api/produtos (Lista todos os tipos configurados)
+        // GET: api/produtos
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ProdutoConfig>>> GetProdutos()
         {
             return await _contexto.ProdutosConfig.ToListAsync();
         }
 
-        // GET: api/produtos/ativo (Retorna a configuração atual da balança)
+        // GET: api/produtos/ativo
         [HttpGet("ativo")]
         public async Task<ActionResult<ProdutoConfig>> GetProdutoAtivo()
         {
             var ativo = await _contexto.ProdutosConfig.FirstOrDefaultAsync(p => p.Ativo);
             if (ativo == null)
             {
-                // Se não houver nenhum configurado, devolve um padrão P13
-                return new ProdutoConfig 
-                { 
-                    Nome = "Padrão (P13)", 
-                    TaraKg = 15.0, 
-                    CapacidadeTotalKg = 13.0, 
-                    Ativo = true 
+                // Padrão se nada estiver configurado
+                return new ProdutoConfig
+                {
+                    Nome = "Padrão (P13)",
+                    TaraKg = 15.0,
+                    CapacidadeTotalKg = 13.0,
+                    Ativo = true,
+                    PrecoPago = 0,
                 };
             }
             return ativo;
         }
 
-        // POST: api/produtos (Cria um novo tipo, ex: P45)
+        // POST: api/produtos
         [HttpPost]
         public async Task<ActionResult<ProdutoConfig>> CriarProduto(ProdutoConfig produto)
         {
@@ -51,25 +52,22 @@ namespace GasMonitor.Api.Controllers
             return CreatedAtAction(nameof(GetProdutos), new { id = produto.Id }, produto);
         }
 
-        // POST: api/produtos/{id}/ativar (Troca o que está na balança)
+        // POST: api/produtos/{id}/ativar
         [HttpPost("{id}/ativar")]
         public async Task<IActionResult> AtivarProduto(int id)
         {
-            // 1. Desativa todos
             var todos = await _contexto.ProdutosConfig.ToListAsync();
-            foreach (var p in todos) p.Ativo = false;
+            foreach (var p in todos)
+                p.Ativo = false;
 
-            // 2. Ativa o escolhido
             var escolhido = todos.FirstOrDefault(p => p.Id == id);
-            if (escolhido == null) return NotFound();
+            if (escolhido == null)
+                return NotFound();
 
             escolhido.Ativo = true;
             await _contexto.SaveChangesAsync();
 
             return Ok(escolhido);
         }
-        
-        // A funcionalidade de "Tarar" (Zero) ficará aqui no futuro,
-        // enviando um comando para o ESP32 ou ajustando um offset no banco.
     }
 }

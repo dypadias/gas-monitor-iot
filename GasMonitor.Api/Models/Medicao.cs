@@ -1,30 +1,36 @@
-using System.ComponentModel.DataAnnotations; // Necessário para [Key]
+using System.ComponentModel.DataAnnotations;
 
 namespace GasMonitor.Api.Models
 {
     /// <summary>
-    /// Representa uma única leitura de peso guardada no banco de dados.
+    /// Representa uma leitura histórica guardada no Banco de Dados.
     /// </summary>
     public class Medicao
     {
-        [Key] // Indica que esta é a Chave Primária (PK) da tabela
+        [Key]
         public long Id { get; set; }
 
         /// <summary>
-        /// O ID do dispositivo que enviou a medição (ex: "ESP32_COZINHA_01")
+        /// O ID do dispositivo que enviou a medição.
         /// </summary>
-        [Required] // Indica que esta coluna não pode ser nula
+        [Required]
         public string IdDispositivo { get; set; } = string.Empty;
+
         /// <summary>
-        /// O peso lido em Quilogramas (Kg)
+        /// O peso bruto lido no momento.
         /// </summary>
         [Required]
         public double PesoKg { get; set; }
 
         /// <summary>
-        /// O carimbo de data/hora de quando esta medição foi registada no sistema.
+        /// Data e hora exata em que o dado chegou ao servidor.
         /// </summary>
         [Required]
         public DateTime DataHoraRegisto { get; set; }
+
+        /// <summary>
+        /// NOVO: Regista se houve alerta de vazamento neste momento específico.
+        /// </summary>
+        public bool VazamentoDetectado { get; set; }
     }
 }

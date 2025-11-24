@@ -1,0 +1,160 @@
+@page "/relatorios"
+@using GasMonitor.App.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<div class="container-fluid p-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark m-0">📊 Inteligência de Consumo</h2>
+    </div>
+
+    <div class="card border-0 shadow-sm p-3 mb-4 bg-white">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label text-muted small">Data Início</label>
+                <input type="date" class="form-control" @bind="dataInicio" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label text-muted small">Data Fim</label>
+                <input type="date" class="form-control" @bind="dataFim" />
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" @onclick="CarregarDados">
+                    <span class="oi oi-magnifying-glass"></span> Filtrar
+                </button>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100" @onclick="LimparFiltros">
+                    Limpar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (carregando)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-2 text-muted">Analisando dados...</p>
+        </div>
+    }
+    else if (stats == null)
+    {
+        <div class="alert alert-info">Nenhum dado encontrado para este período.</div>
+    }
+    else
+    {
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 bg-light text-center">
+                    <small class="text-muted d-block">Período Analisado</small>
+                    <strong class="fs-5">@stats.DiasDeUso dias</strong>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 bg-light text-center">
+                    <small class="text-muted d-block">Média Diária</small>
+                    <strong class="fs-5 text-primary">@stats.MediaConsumoDiarioKg Kg</strong>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm p-3 bg-light text-center">
+                    <small class="text-muted d-block">Turno de Pico</small>
+                    <strong class="fs-5">@stats.TurnoMaisConsumidor</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm p-4 h-100">
+                    <h5 class="mb-3 text-center">Perfil de Uso (Dia/Noite)</h5>
+                    <div style="height: 250px;">
+                        <canvas id="graficoTurno"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card border-0 shadow-sm p-4 h-100">
+                    <h5 class="mb-3">Consumo por Dia da Semana</h5>
+                    <div style="height: 250px;">
+                        <canvas id="graficoSemana"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private EstatisticasResponse? stats;
+    private DateTime? dataInicio;
+    private DateTime? dataFim;
+    private bool carregando = false;
+    private bool precisaDesenharGrafico = false; // Flag de controle
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Define padrão: Últimos 30 dias
+        dataFim = DateTime.Now;
+        dataInicio = DateTime.Now.AddDays(-30);
+        await CarregarDados();
+    }
+
+    // Este método roda SEMPRE que a tela acaba de ser desenhada (renderizada)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (precisaDesenharGrafico && stats != null)
+        {
+            precisaDesenharGrafico = false; // Já desenhamos, reseta a flag
+            // Agora temos certeza que o <canvas> existe no HTML
+            await JS.InvokeVoidAsync("desenharGraficosRelatorio", stats);
+        }
+    }
+
+    private async Task CarregarDados()
+    {
+        carregando = true;
+        stats = null; 
+        
+        try 
+        {
+            var url = "api/estatisticas";
+            var query = new List<string>();
+            
+            if (dataInicio.HasValue) 
+                query.Add($"inicio={dataInicio.Value.ToString("yyyy-MM-dd")}");
+            
+            if (dataFim.HasValue) 
+                query.Add($"fim={dataFim.Value.ToString("yyyy-MM-dd")}");
+
+            if (query.Any())
+                url += "?" + string.Join("&", query);
+
+            stats = await Http.GetFromJsonAsync<EstatisticasResponse>(url);
+            
+            if (stats != null)
+            {
+                // Avisa o OnAfterRender que há dados prontos para serem desenhados
+                precisaDesenharGrafico = true; 
+            }
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine("Sem dados ou erro: " + ex.Message);
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+
+    private async Task LimparFiltros()
+    {
+        dataInicio = null;
+        dataFim = null;
+        await CarregarDados();
+    }
+}

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GasMonitor IoT</title>
+    <base href="/" />
+    
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="GasMonitor.App.styles.css" rel="stylesheet" />
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <div style="position:absolute; top:30vh; width:100%; text-align:center">
+            <h1>🔥 GasMonitor</h1>
+            <p>Carregando sistema...</p>
+            <div class="spinner-border text-primary" role="status"></div>
+        </div>
+    </div>
+
+    <div id="blazor-error-ui">
+        Ocorreu um erro não tratado.
+        <a href="" class="reload">Recarregar</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+
+    <script>
+        let chartInstance = null;
+        let chartTurnoInstance = null;
+        let chartSemanaInstance = null;
+
+        // --- 1. Gráfico da Dashboard (Burndown Chart: Real vs Média) ---
+window.desenharGrafico = (labels, valoresReais) => {
+    const ctx = document.getElementById('graficoGas');
+    if (!ctx) return;
+
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+
+    // 1. Calcular a "Linha de Média/Ideal" matematicamente
+    // A lógica simples: Criamos uma linha reta do primeiro ponto até o fim previsto
+    // Num cenário real, isso viria da API (Média Histórica), aqui simulamos uma projeção linear
+    const valorInicial = valoresReais[0];
+    const valorFinal = valoresReais[valoresReais.length - 1];
+    
+    // Cria um array de "valores ideais" que é apenas uma reta perfeita entre o início e o fim
+    // Isso permite ver visualmente os "degraus" do consumo real vs a média linear
+    const passo = (valorInicial - valorFinal) / (valoresReais.length - 1);
+    const valoresIdeais = labels.map((_, index) => valorInicial - (passo * index));
+
+    // Gradiente para a linha Real
+    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(78, 115, 223, 0.5)');
+    gradient.addColorStop(1, 'rgba(78, 115, 223, 0.0)');
+
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Nível Real (%)',
+                    data: valoresReais,
+                    borderColor: '#4e73df', // Azul
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    pointRadius: 0,
+                    fill: true,
+                    tension: 0.4, // Curva suave
+                    order: 1
+                },
+                {
+                    label: 'Consumo Médio Esperado',
+                    data: valoresIdeais,
+                    borderColor: '#858796', // Cinza
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [5, 5], // Linha tracejada
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0, // Linha reta
+                    order: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: { 
+                legend: { 
+                    display: true, // Agora mostramos a legenda para entender as duas linhas
+                    position: 'top',
+                    labels: { usePointStyle: true, boxWidth: 6 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + Math.round(context.raw) + '%';
+                        }
+                    }
+                }
+            },
+            scales: { 
+                x: { grid: { display: false } },
+                y: { min: 0, max: 100, grid: { borderDash: [5, 5] } } 
+            },
+            animation: false
+        }
+    });
+}
+
+        // --- 2. Gráficos da Página de Relatórios (Pizza e Barras) ---
+        window.desenharGraficosRelatorio = (stats) => {
+            console.log("Dados recebidos no JS:", stats); // Para depuração (F12)
+
+            // Lógica de Segurança: Tenta ler Maiúscula OU minúscula
+            // O .NET às vezes manda "ConsumoDiaKg" e às vezes "consumoDiaKg"
+            const dia = stats.consumoDiaKg || stats.ConsumoDiaKg || 0;
+            const noite = stats.consumoNoiteKg || stats.ConsumoNoiteKg || 0;
+            
+            const diasDict = stats.consumoPorDiaSemana || stats.ConsumoPorDiaSemana || {};
+            
+            // A. Gráfico de Pizza (Turno: Dia vs Noite)
+            const ctxTurno = document.getElementById('graficoTurno');
+            if (ctxTurno) {
+                if (chartTurnoInstance) chartTurnoInstance.destroy();
+
+                chartTurnoInstance = new Chart(ctxTurno, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Dia (06-18h)', 'Noite (18-06h)'],
+                        datasets: [{
+                            data: [dia, noite],
+                            backgroundColor: ['#f1c40f', '#2c3e50'], // Amarelo e Azul Escuro
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            // B. Gráfico de Barras (Dias da Semana)
+            const ctxSemana = document.getElementById('graficoSemana');
+            if (ctxSemana) {
+                if (chartSemanaInstance) chartSemanaInstance.destroy();
+
+                const diasLabels = Object.keys(diasDict);
+                const diasValores = Object.values(diasDict);
+
+                chartSemanaInstance = new Chart(ctxSemana, {
+                    type: 'bar',
+                    data: {
+                        labels: diasLabels,
+                        datasets: [{
+                            label: 'Consumo (Kg)',
+                            data: diasValores,
+                            backgroundColor: '#3498db',
+                            borderRadius: 5
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
