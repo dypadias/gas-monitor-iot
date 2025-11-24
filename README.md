@@ -52,3 +52,4 @@ Certifique-se que a ConnectionString está configurada (ou use a padrão de dev)
 ```bash
 cd GasMonitor.Api
 dotnet ef database update
+
