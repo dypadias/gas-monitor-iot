@@ -2,21 +2,19 @@
 
 @if (Dicas.Any())
 {
-    <div class="card border-0 shadow-sm mb-4 bg-white">
-        <div class="card-body">
-            <h5 class="card-title d-flex align-items-center text-primary">
-                <span class="oi oi-lightbulb me-2"></span> Dicas Inteligentes
-            </h5>
-            
-            <div class="list-group list-group-flush mt-3">
-                @foreach (var dica in Dicas)
-                {
-                    <div class="list-group-item border-0 px-0 d-flex">
-                        <span class="me-3 text-warning">💡</span>
-                        <span class="text-muted">@dica</span>
-                    </div>
-                }
-            </div>
+    <div class="card-moderno mb-4">
+        <h5 class="d-flex align-items-center text-primary mb-3" style="font-weight: 700;">
+            <span class="me-2">💡</span> Dicas Inteligentes
+        </h5>
+        
+        <div class="d-flex flex-column gap-3">
+            @foreach (var dica in Dicas)
+            {
+                <div class="d-flex align-items-start">
+                    <span class="me-3 text-warning fs-5" style="line-height: 1.2;">⚡</span>
+                    <span class="text-muted" style="font-size: 0.95rem;">@dica</span>
+                </div>
+            }
         </div>
     </div>
 }
@@ -27,7 +25,6 @@
 
     private List<string> Dicas = new();
 
-    // Sempre que os parâmetros mudarem (novos dados), recalcula as dicas
     protected override void OnParametersSet()
     {
         GerarDicas();
@@ -40,7 +37,6 @@
         if (Stats == null || UltimaLeitura == null) return;
 
         // 1. Análise de Fuga Lenta
-        // Se o consumo médio subiu muito de repente (ex: > 500g/dia é muito para casa)
         if (Stats.MediaConsumoDiarioKg > 0.5)
         {
             Dicas.Add("O seu consumo diário está muito acima da média (0.5kg/dia). Verifique se há micro-vazamentos ou se o forno tem sido muito usado.");
@@ -52,27 +48,30 @@
             Dicas.Add("A maior parte do seu consumo é noturno. Cozinhar em grandes quantidades ao fim de semana (Meal Prep) pode economizar até 15% de gás.");
         }
 
-        // 3. Análise de Pressão/Eficiência (Fim do Botijão)
+        // 3. Análise de Fim do Botijão
         if (UltimaLeitura.PorcentagemGas < 10)
         {
-            Dicas.Add("O gás está no fim. A chama pode ficar amarela (incompleta) e sujar as panelas. Considere trocar antes de chegar a 0% para evitar desperdício térmico.");
+            Dicas.Add("O gás está no fim. A chama pode ficar amarela e sujar as panelas. Considere trocar antes de chegar a 0%.");
         }
 
-        // 4. Dica Genérica de Panela (Sempre útil)
-        // Adiciona aleatoriamente para dar variedade
-        if (new Random().Next(0, 2) == 0) 
+        // 4. Dica do Momento (Correção: Removi a lâmpada do texto aqui)
+        var curiosidades = new List<string>
         {
-            Dicas.Add("Sabia que usar a tampa nas panelas reduz o tempo de cozimento e economiza até 30% de gás?");
-        }
-        else
-        {
-             Dicas.Add("A chama do fogão deve ser azul. Se estiver amarela, os bicos estão sujos e você está a 'deitar dinheiro fora'.");
-        }
+            "Sabia que usar a tampa nas panelas reduz o tempo de cozimento e economiza até 30% de gás?",
+            "A chama do fogão deve ser azul. Se estiver amarela, os bicos estão sujos e você está a gastar mais.",
+            "Panelas de pressão cozinham até 70% mais rápido que panelas comuns.",
+            "Corte os alimentos em pedaços menores para cozinharem mais rápido.",
+            "O fundo da panela deve cobrir toda a chama. Chama sobrando nas laterais é dinheiro perdido."
+        };
+
+        var indiceDoDia = DateTime.Now.Hour % curiosidades.Count;
+        // CORRIGIDO: Removido o emoji "💡" daqui para não duplicar
+        Dicas.Add("Dica do Momento: " + curiosidades[indiceDoDia]);
         
         // 5. Previsão Financeira
         if (UltimaLeitura.DiasRestantesEstimados > 0 && UltimaLeitura.DiasRestantesEstimados < 5)
         {
-             Dicas.Add($"Prepare a carteira! Pela média atual, você precisará comprar um botijão novo em cerca de {UltimaLeitura.DiasRestantesEstimados} dias.");
+             Dicas.Add($"Atenção: Pela média atual, você precisará comprar um botijão novo em cerca de {UltimaLeitura.DiasRestantesEstimados} dias.");
         }
     }
 }

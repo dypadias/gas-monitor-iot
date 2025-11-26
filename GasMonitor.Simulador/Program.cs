@@ -48,7 +48,7 @@ while (true)
         else if (tecla == ConsoleKey.Spacebar)
         {
             fogaoLigado = !fogaoLigado;
-            ciclosParaMudarEstado = 10; // Mantém o estado manual por um tempo
+            ciclosParaMudarEstado = 15; // Mantém o estado manual por um tempo
             Console.WriteLine($"\n>>> FOGÃO {(fogaoLigado ? "LIGADO 🔥" : "DESLIGADO 🛑")}");
         }
     }

@@ -1,4 +1,4 @@
-using GasMonitor.Api.Models; // Importa o modelo
+using GasMonitor.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace GasMonitor.Api.Data
@@ -8,11 +8,10 @@ namespace GasMonitor.Api.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options) { }
 
-        // Mapeia a nossa classe "Medicao" para uma tabela chamada "Medicoes"
         public DbSet<Medicao> Medicoes { get; set; }
-
         public DbSet<ProdutoConfig> ProdutosConfig { get; set; }
 
+        // ESTA LINHA É OBRIGATÓRIA PARA O GRÁFICO DE PREÇOS FUNCIONAR:
         public DbSet<HistoricoTroca> HistoricoTrocas { get; set; }
     }
 }

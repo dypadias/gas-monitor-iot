@@ -1,0 +1,85 @@
+@page "/ajuda"
+
+<PageTitle>Ajuda | SmartGás</PageTitle>
+
+<div class="container-fluid p-4">
+    <h2 class="fw-bold mb-4 text-dark">🆘 Central de Ajuda</h2>
+
+    <div class="row g-4">
+        
+        <div class="col-md-6">
+            <div class="card-moderno bg-white h-100">
+                <h4 class="text-primary mb-3 fw-bold">Precisa de Gás Agora?</h4>
+                <p class="text-muted">Localize os distribuidores mais próximos da sua localização atual.</p>
+                
+                <div class="d-grid gap-3 mt-4">
+                    <a href="https://www.google.com/maps/search/distribuidora+de+gas/" 
+                       target="_blank" class="btn btn-outline-primary btn-lg d-flex align-items-center justify-content-center gap-2 p-3">
+                        <span class="fs-4">🗺️</span> 
+                        <div>
+                            <div class="fw-bold">Abrir Google Maps</div>
+                            <small style="font-size: 0.7rem">Ver distribuidores próximos</small>
+                        </div>
+                    </a>
+                    <a href="https://waze.com/ul?q=distribuidora%20de%20gas" 
+                       target="_blank" class="btn btn-outline-info btn-lg d-flex align-items-center justify-content-center gap-2 p-3">
+                        <span class="fs-4">🚗</span> 
+                        <div>
+                            <div class="fw-bold">Abrir Waze</div>
+                            <small style="font-size: 0.7rem">Navegar até ao mais próximo</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card-moderno bg-white h-100">
+                <h4 class="text-success mb-4 fw-bold">Como Trocar o Botijão</h4>
+                
+                <div class="steps-container">
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div class="step-text">
+                            <strong>Feche a válvula</strong>
+                            <p class="mb-0 text-muted small">Certifique-se que o registro do botijão vazio está fechado e não há chamas por perto.</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div class="step-text">
+                            <strong>Prepare o novo</strong>
+                            <p class="mb-0 text-muted small">Retire o lacre do botijão novo. Verifique se a rosca está limpa e sem danos.</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">3</div>
+                        <div class="step-text">
+                            <strong>Instale manualmente</strong>
+                            <p class="mb-0 text-muted small">Rosqueie o regulador usando apenas as mãos (borboleta). <strong>Não use ferramentas!</strong></p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">4</div>
+                        <div class="step-text">
+                            <strong>Teste de Segurança</strong>
+                            <p class="mb-0 text-muted small">Faça o teste da espuma (água + sabão) na conexão. Se borbulhar, há vazamento.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .step-item { display: flex; gap: 15px; margin-bottom: 20px; align-items: start; }
+    
+    .step-num { 
+        background: #1cc88a; color: white; width: 35px; height: 35px; 
+        border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+        font-weight: bold; flex-shrink: 0; box-shadow: 0 3px 6px rgba(28, 200, 138, 0.3);
+    }
+    
+    .step-text strong { color: #2c3e50; display: block; margin-bottom: 2px; }
+</style>

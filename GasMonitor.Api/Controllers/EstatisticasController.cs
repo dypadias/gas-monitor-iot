@@ -23,100 +23,100 @@ namespace GasMonitor.Api.Controllers
             [FromQuery] DateTime? fim
         )
         {
-            // 1. Começa a preparar a consulta (ainda não vai ao banco)
             var query = _contexto.Medicoes.AsQueryable();
 
-            // 2. Aplica os filtros de data se o usuário os enviou
+            // Variáveis de data para reutilizar nas duas queries (Medições e Trocas)
+            DateTime? dataInicioUtc = null;
+            DateTime? dataFimUtc = null;
+
             if (inicio.HasValue)
             {
-                // Converte para UTC para garantir compatibilidade com o banco
-                var dataInicio = inicio.Value.ToUniversalTime();
-                query = query.Where(m => m.DataHoraRegisto >= dataInicio);
+                dataInicioUtc = DateTime.SpecifyKind(inicio.Value, DateTimeKind.Utc);
+                query = query.Where(m => m.DataHoraRegisto >= dataInicioUtc.Value);
             }
 
             if (fim.HasValue)
             {
-                // Adiciona 23:59:59 para pegar o dia inteiro final
-                var dataFim = fim.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
-                query = query.Where(m => m.DataHoraRegisto <= dataFim);
+                // TRUQUE DO FUSO HORÁRIO:
+                // Adicionamos 2 dias ao fim para garantir que pegamos as horas noturnas do Brasil
+                // que já viraram "amanhã" no UTC.
+                dataFimUtc = DateTime.SpecifyKind(fim.Value.Date.AddDays(2), DateTimeKind.Utc);
+                query = query.Where(m => m.DataHoraRegisto < dataFimUtc.Value);
             }
 
-            // 3. Executa a consulta no Banco de Dados
             var historico = await query.OrderBy(m => m.DataHoraRegisto).ToListAsync();
 
-            // Se não houver dados no período, retorna vazio
-            if (!historico.Any())
-            {
-                return NoContent();
-            }
-
+            // Inicializa resposta vazia se não houver medições, mas continua para ver se há trocas
             var stats = new EstatisticasResponse();
 
-            // --- A. Dados Gerais ---
-            stats.DataAquisicao = historico.First().DataHoraRegisto;
-
-            // Calcula dias de uso reais dentro do período selecionado
-            stats.DiasDeUso = (int)
-                (historico.Last().DataHoraRegisto - stats.DataAquisicao).TotalDays;
-            if (stats.DiasDeUso == 0)
-                stats.DiasDeUso = 1;
-
-            // --- B. Loop de Análise de Consumo ---
-            for (int i = 1; i < historico.Count; i++)
+            if (historico.Any())
             {
-                var leituraAnterior = historico[i - 1];
-                var leituraAtual = historico[i];
+                stats.DataAquisicao = historico.First().DataHoraRegisto;
+                stats.DiasDeUso = (int)
+                    (historico.Last().DataHoraRegisto - stats.DataAquisicao).TotalDays;
+                if (stats.DiasDeUso == 0)
+                    stats.DiasDeUso = 1;
 
-                // Quanto consumiu entre uma leitura e outra?
-                double diferenca = leituraAnterior.PesoKg - leituraAtual.PesoKg;
-
-                // Filtros para ignorar ruído ou troca de botijão (peso subindo)
-                // Aceitamos apenas consumos positivos entre 5 gramas e 5 quilos (ex: fugas massivas)
-                if (diferenca > 0.005 && diferenca < 5.0)
+                // Loop de Análise de Consumo (Mantém lógica igual)
+                for (int i = 1; i < historico.Count; i++)
                 {
-                    // Data local para saber se é dia/noite corretamente
-                    var dataLocal = leituraAtual.DataHoraRegisto.ToLocalTime();
+                    var leituraAnterior = historico[i - 1];
+                    var leituraAtual = historico[i];
+                    double diferenca = leituraAnterior.PesoKg - leituraAtual.PesoKg;
 
-                    // 1. Análise: Dia da Semana (Segunda, Terça...)
-                    var diaSemana = dataLocal.ToString("dddd", new CultureInfo("pt-BR"));
-                    if (!stats.ConsumoPorDiaSemana.ContainsKey(diaSemana))
-                        stats.ConsumoPorDiaSemana[diaSemana] = 0;
-                    stats.ConsumoPorDiaSemana[diaSemana] += diferenca;
-
-                    // 2. Análise: Mês (Novembro/2025)
-                    var mes = dataLocal.ToString("MMMM/yyyy", new CultureInfo("pt-BR"));
-                    if (!stats.ConsumoPorMes.ContainsKey(mes))
-                        stats.ConsumoPorMes[mes] = 0;
-                    stats.ConsumoPorMes[mes] += diferenca;
-
-                    // 3. Análise: Turno (Dia vs Noite)
-                    var hora = dataLocal.Hour;
-                    if (hora >= 6 && hora < 18)
+                    if (diferenca > 0.005 && diferenca < 5.0)
                     {
-                        stats.ConsumoDiaKg += diferenca; // Dia (06h às 18h)
-                    }
-                    else
-                    {
-                        stats.ConsumoNoiteKg += diferenca; // Noite (18h às 06h)
+                        var dataLocal = leituraAtual.DataHoraRegisto.ToLocalTime();
+                        var diaSemana = dataLocal.ToString("dddd", new CultureInfo("pt-BR"));
+                        var mes = dataLocal.ToString("MMMM/yyyy", new CultureInfo("pt-BR"));
+
+                        if (!stats.ConsumoPorDiaSemana.ContainsKey(diaSemana))
+                            stats.ConsumoPorDiaSemana[diaSemana] = 0;
+                        stats.ConsumoPorDiaSemana[diaSemana] += diferenca;
+
+                        if (!stats.ConsumoPorMes.ContainsKey(mes))
+                            stats.ConsumoPorMes[mes] = 0;
+                        stats.ConsumoPorMes[mes] += diferenca;
+
+                        if (dataLocal.Hour >= 6 && dataLocal.Hour < 18)
+                            stats.ConsumoDiaKg += diferenca;
+                        else
+                            stats.ConsumoNoiteKg += diferenca;
                     }
                 }
+
+                // Totais
+                double consumoTotal = stats.ConsumoDiaKg + stats.ConsumoNoiteKg;
+                stats.MediaConsumoDiarioKg = Math.Round(consumoTotal / stats.DiasDeUso, 3);
+                stats.TurnoMaisConsumidor =
+                    stats.ConsumoNoiteKg > stats.ConsumoDiaKg ? "Noite 🌑" : "Dia ☀️";
+                stats.ConsumoDiaKg = Math.Round(stats.ConsumoDiaKg, 2);
+                stats.ConsumoNoiteKg = Math.Round(stats.ConsumoNoiteKg, 2);
             }
 
-            // --- C. Fechamento e Totais ---
-            double consumoTotalPeriodo = stats.ConsumoDiaKg + stats.ConsumoNoiteKg;
+            // --- QUERY SEPARADA PARA O HISTÓRICO DE PREÇOS ---
+            // Usamos as mesmas datas "generosas" calculadas acima
+            var queryTrocas = _contexto.HistoricoTrocas.AsQueryable();
 
-            stats.MediaConsumoDiarioKg = Math.Round(consumoTotalPeriodo / stats.DiasDeUso, 3);
+            if (dataInicioUtc.HasValue)
+                queryTrocas = queryTrocas.Where(t => t.DataTroca >= dataInicioUtc.Value);
 
-            stats.TurnoMaisConsumidor =
-                stats.ConsumoNoiteKg > stats.ConsumoDiaKg ? "Noite 🌑" : "Dia ☀️";
+            if (dataFimUtc.HasValue)
+                queryTrocas = queryTrocas.Where(t => t.DataTroca < dataFimUtc.Value);
 
-            // Arredondamentos finais para exibição limpa
-            stats.ConsumoDiaKg = Math.Round(stats.ConsumoDiaKg, 2);
-            stats.ConsumoNoiteKg = Math.Round(stats.ConsumoNoiteKg, 2);
+            var trocas = await queryTrocas.OrderBy(t => t.DataTroca).ToListAsync();
 
-            // Arredonda os dicionários também
-            foreach (var key in stats.ConsumoPorDiaSemana.Keys.ToList())
-                stats.ConsumoPorDiaSemana[key] = Math.Round(stats.ConsumoPorDiaSemana[key], 2);
+            foreach (var troca in trocas)
+            {
+                stats.HistoricoPrecos.Add(
+                    new HistoricoPonto
+                    {
+                        Data = troca.DataTroca, // O Frontend converte para Local Time
+                        Valor = troca.PrecoPago,
+                        Etiqueta = troca.NomeProduto,
+                    }
+                );
+            }
 
             return Ok(stats);
         }

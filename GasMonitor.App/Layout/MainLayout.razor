@@ -1,16 +1,28 @@
 ﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+<div class="page-container">
+    <nav class="navbar-modern">
+        <a href="" class="brand">
+            🔥 GasMonitor <span style="font-weight: 300; font-size: 0.7em; opacity: 0.6; margin-left: 5px;">PRO</span>
+        </a>
+        
+        <div class="nav-links">
+            <NavLink class="nav-link-item" href="" Match="NavLinkMatch.All">
+                Dashboard
+            </NavLink>
+            <NavLink class="nav-link-item" href="relatorios">
+                Relatórios
+            </NavLink>
+            <NavLink class="nav-link-item" href="configuracoes">
+                Configurações
+            </NavLink>
+            <NavLink class="nav-link-item" href="ajuda">
+                Ajuda
+            </NavLink>
         </div>
+    </nav>
 
-        <article class="content px-4">
-            @Body
-        </article>
+    <main class="main-content">
+        @Body
     </main>
 </div>

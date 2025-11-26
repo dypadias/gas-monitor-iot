@@ -15,5 +15,15 @@ namespace GasMonitor.Api.Models
         public double ConsumoDiaKg { get; set; } // 06:00 - 18:00
         public double ConsumoNoiteKg { get; set; } // 18:00 - 06:00
         public string TurnoMaisConsumidor { get; set; } = string.Empty;
+
+        // NOVO: Lista para o gráfico de preços
+        public List<HistoricoPonto> HistoricoPrecos { get; set; } = new();
+    }
+
+    public class HistoricoPonto
+    {
+        public DateTime Data { get; set; }
+        public decimal Valor { get; set; }
+        public string Etiqueta { get; set; } = string.Empty; // Ex: "Marca A"
     }
 }

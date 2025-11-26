@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GasMonitor.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251124004002_AdicionaHistoricoTrocas")]
-    partial class AdicionaHistoricoTrocas
+    [Migration("20251126001305_ResetTotal")]
+    partial class ResetTotal
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

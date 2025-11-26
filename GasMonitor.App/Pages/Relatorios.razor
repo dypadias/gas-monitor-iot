@@ -4,84 +4,84 @@
 @inject IJSRuntime JS
 
 <div class="container-fluid p-4">
-    
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold text-dark m-0">📊 Inteligência de Consumo</h2>
-    </div>
+    <h2 class="fw-bold mb-4 text-dark">📊 Inteligência de Consumo</h2>
 
-    <div class="card border-0 shadow-sm p-3 mb-4 bg-white">
+    <div class="card-moderno bg-white mb-4">
         <div class="row g-3 align-items-end">
             <div class="col-md-3">
-                <label class="form-label text-muted small">Data Início</label>
+                <label class="form-label small text-muted">Início</label>
                 <input type="date" class="form-control" @bind="dataInicio" />
             </div>
             <div class="col-md-3">
-                <label class="form-label text-muted small">Data Fim</label>
+                <label class="form-label small text-muted">Fim</label>
                 <input type="date" class="form-control" @bind="dataFim" />
             </div>
             <div class="col-md-2">
-                <button class="btn btn-primary w-100" @onclick="CarregarDados">
-                    <span class="oi oi-magnifying-glass"></span> Filtrar
-                </button>
+                <button class="btn btn-primary w-100" @onclick="CarregarDados">Filtrar</button>
             </div>
             <div class="col-md-2">
-                <button class="btn btn-outline-secondary w-100" @onclick="LimparFiltros">
-                    Limpar
-                </button>
+                <button class="btn btn-outline-secondary w-100" @onclick="LimparFiltros">Limpar</button>
             </div>
         </div>
     </div>
 
-    @if (carregando)
+    @if (stats == null)
     {
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary"></div>
-            <p class="mt-2 text-muted">Analisando dados...</p>
-        </div>
-    }
-    else if (stats == null)
-    {
-        <div class="alert alert-info">Nenhum dado encontrado para este período.</div>
+        <div class="alert alert-light text-center">Carregando dados...</div>
     }
     else
     {
         <div class="row g-4 mb-4">
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm p-3 bg-light text-center">
-                    <small class="text-muted d-block">Período Analisado</small>
-                    <strong class="fs-5">@stats.DiasDeUso dias</strong>
+            <div class="col-md-4">
+                <div class="card-moderno text-center">
+                    <small class="text-muted d-block">Dias Analisados</small>
+                    <strong class="fs-4">@stats.DiasDeUso</strong>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm p-3 bg-light text-center">
+            <div class="col-md-4">
+                <div class="card-moderno text-center">
                     <small class="text-muted d-block">Média Diária</small>
-                    <strong class="fs-5 text-primary">@stats.MediaConsumoDiarioKg Kg</strong>
+                    <strong class="fs-4 text-primary">@stats.MediaConsumoDiarioKg Kg</strong>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm p-3 bg-light text-center">
-                    <small class="text-muted d-block">Turno de Pico</small>
-                    <strong class="fs-5">@stats.TurnoMaisConsumidor</strong>
+            <div class="col-md-4">
+                <div class="card-moderno text-center">
+                    <small class="text-muted d-block">Turno Pico</small>
+                    <strong class="fs-4">@stats.TurnoMaisConsumidor</strong>
                 </div>
             </div>
         </div>
 
-        <div class="row g-4">
+        <div class="row g-4 mb-4">
             <div class="col-md-4">
-                <div class="card border-0 shadow-sm p-4 h-100">
-                    <h5 class="mb-3 text-center">Perfil de Uso (Dia/Noite)</h5>
-                    <div style="height: 250px;">
-                        <canvas id="graficoTurno"></canvas>
-                    </div>
+                <div class="card-moderno h-100">
+                    <h5 class="mb-3">Turno (Dia/Noite)</h5>
+                    <div style="height: 250px;"><canvas id="graficoTurno"></canvas></div>
                 </div>
             </div>
-
             <div class="col-md-8">
-                <div class="card border-0 shadow-sm p-4 h-100">
+                <div class="card-moderno h-100">
                     <h5 class="mb-3">Consumo por Dia da Semana</h5>
-                    <div style="height: 250px;">
-                        <canvas id="graficoSemana"></canvas>
-                    </div>
+                    <div style="height: 250px;"><canvas id="graficoSemana"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card-moderno">
+                    <h5 class="mb-3">Histórico de Preços Pagos</h5>
+                    @if (stats.HistoricoPrecos != null && stats.HistoricoPrecos.Count > 0)
+                    {
+                        <div style="height: 300px;"><canvas id="graficoPrecos"></canvas></div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5 text-muted bg-light rounded">
+                            <p class="mb-0">Nenhum histórico de troca registrado neste período.</p>
+                            <small>Use o botão "Recarregar" no Simulador (R) ou na Dashboard para gerar dados.</small>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -90,65 +90,35 @@
 
 @code {
     private EstatisticasResponse? stats;
-    private DateTime? dataInicio;
-    private DateTime? dataFim;
-    private bool carregando = false;
-    private bool precisaDesenharGrafico = false; // Flag de controle
+    private DateTime? dataInicio = DateTime.Now.AddDays(-30);
+    private DateTime? dataFim = DateTime.Now;
+    private bool desenharGraficos = false;
 
-    protected override async Task OnInitializedAsync()
-    {
-        // Define padrão: Últimos 30 dias
-        dataFim = DateTime.Now;
-        dataInicio = DateTime.Now.AddDays(-30);
-        await CarregarDados();
-    }
+    protected override async Task OnInitializedAsync() => await CarregarDados();
 
-    // Este método roda SEMPRE que a tela acaba de ser desenhada (renderizada)
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (precisaDesenharGrafico && stats != null)
+        if (desenharGraficos && stats != null)
         {
-            precisaDesenharGrafico = false; // Já desenhamos, reseta a flag
-            // Agora temos certeza que o <canvas> existe no HTML
+            desenharGraficos = false;
             await JS.InvokeVoidAsync("desenharGraficosRelatorio", stats);
         }
     }
 
     private async Task CarregarDados()
     {
-        carregando = true;
-        stats = null; 
-        
-        try 
+        try
         {
-            var url = "api/estatisticas";
             var query = new List<string>();
+            if (dataInicio.HasValue) query.Add($"inicio={dataInicio.Value:yyyy-MM-dd}");
+            if (dataFim.HasValue) query.Add($"fim={dataFim.Value:yyyy-MM-dd}");
             
-            if (dataInicio.HasValue) 
-                query.Add($"inicio={dataInicio.Value.ToString("yyyy-MM-dd")}");
+            var url = "api/estatisticas" + (query.Any() ? "?" + string.Join("&", query) : "");
             
-            if (dataFim.HasValue) 
-                query.Add($"fim={dataFim.Value.ToString("yyyy-MM-dd")}");
-
-            if (query.Any())
-                url += "?" + string.Join("&", query);
-
             stats = await Http.GetFromJsonAsync<EstatisticasResponse>(url);
-            
-            if (stats != null)
-            {
-                // Avisa o OnAfterRender que há dados prontos para serem desenhados
-                precisaDesenharGrafico = true; 
-            }
+            if (stats != null) desenharGraficos = true;
         }
-        catch(Exception ex)
-        {
-            Console.WriteLine("Sem dados ou erro: " + ex.Message);
-        }
-        finally
-        {
-            carregando = false;
-        }
+        catch (Exception ex) { Console.WriteLine(ex.Message); }
     }
 
     private async Task LimparFiltros()
