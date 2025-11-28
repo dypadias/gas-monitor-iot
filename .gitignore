@@ -56,3 +56,4 @@ nunit-*.xml
 # Credencials files
 appsettings.json
 appsettings.Development.json
+credenciais.txt
