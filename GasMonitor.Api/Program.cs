@@ -58,4 +58,21 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// Isto cria um "escopo" temporário para aceder ao banco de dados no arranque
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var contexto = services.GetRequiredService<ApplicationDbContext>();
+        // Este comando cria o banco e as tabelas se elas não existirem
+        contexto.Database.EnsureCreated();
+        Console.WriteLine("Banco de dados verificado/criado com sucesso!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Erro ao criar o banco de dados: {ex.Message}");
+    }
+}
+
 app.Run();
