@@ -58,7 +58,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Isto cria um "escopo" temporário para aceder ao banco de dados no arranque
+// Isto cria um "escopo" temporário para aceder ao banco de dados no arranque no db
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -71,7 +71,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Erro ao criar o banco de dados: {ex.Message}");
+        Console.WriteLine($"Erro ao criar o banco de dados: {ex.Message}"); 
     }
 }
 
