@@ -3,27 +3,36 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Ler a string de conexão
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// 1. Tenta pegar a string de conexão das Variáveis de Ambiente (Render/Supabase)
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+
+// 2. Se vier vazia (estamos no PC local), pega do appsettings.json
+if (string.IsNullOrEmpty(connectionString))
+{
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+}
 
 builder.Services.AddControllers();
 
 // Configurar Banco de Dados
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString));
+builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
 
 // --- ALTERAÇÃO 1: Adicionar o Serviço de CORS ---
 // Estamos a criar uma política chamada "PermitirTudo" (útil para desenvolvimento)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("PermitirTudo",
+    options.AddPolicy(
+        "PermitirTudo",
         policy =>
         {
-            policy.AllowAnyOrigin()  // Aceita pedidos de qualquer site/IP
-                  .AllowAnyMethod()  // Aceita GET, POST, PUT, DELETE
-                  .AllowAnyHeader(); // Aceita qualquer tipo de cabeçalho
-        });
+            policy
+                .AllowAnyOrigin() // Aceita pedidos de qualquer site/IP
+                .AllowAnyMethod() // Aceita GET, POST, PUT, DELETE
+                .AllowAnyHeader(); // Aceita qualquer tipo de cabeçalho
+        }
+    );
 });
+
 // ------------------------------------------------
 
 builder.Services.AddEndpointsApiExplorer();
@@ -41,7 +50,8 @@ app.UseHttpsRedirection();
 
 // --- ALTERAÇÃO 2: Ativar o CORS ---
 // IMPORTANTE: Tem de ser ANTES de "UseAuthorization" e "MapControllers"
-app.UseCors("PermitirTudo"); 
+app.UseCors("PermitirTudo");
+
 // ----------------------------------
 
 app.UseAuthorization();
