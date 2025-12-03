@@ -71,7 +71,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Erro ao criar o banco de dados: {ex.Message}"); 
+        Console.WriteLine($"Erro ao criar o banco de dados: {ex.Message}");
     }
 }
 
