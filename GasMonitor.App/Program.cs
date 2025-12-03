@@ -11,4 +11,4 @@ builder.Services.AddScoped(sp => new HttpClient
     BaseAddress = new Uri("https://gas-monitor-iot.onrender.com"),
 });
 
-await builder.Build().RunAsync();
+await builder.Build().RunAsync();  
