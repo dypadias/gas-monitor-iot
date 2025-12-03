@@ -1,11 +1,14 @@
+using GasMonitor.App;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using GasMonitor.App;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5092") });
+builder.Services.AddScoped(sp => new HttpClient
+{
+    BaseAddress = new Uri("https://gas-monitor-iot.onrender.com"),
+});
 
 await builder.Build().RunAsync();
