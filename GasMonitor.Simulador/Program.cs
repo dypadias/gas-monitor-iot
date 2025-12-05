@@ -2,7 +2,7 @@
 
 // --- CONFIGURAÇÃO ---
 // IMPORTANTE: Verifique a porta da sua API!
-const string URL_API = "http://localhost:5092/api/medicoes";
+const string URL_API = "https://gas-monitor-iot.onrender.com/api/medicoes";
 const string ID_DISPOSITIVO = "SIMULADOR_CASA_01";
 const int INTERVALO_SEGUNDOS = 2; // Envia dados a cada 2 segundos
 
