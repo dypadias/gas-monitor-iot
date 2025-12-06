@@ -71,59 +71,62 @@
         </div>
 
         <div class="col-lg-5">
-            <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
-                <div class="card-header bg-primary text-white py-3">
-                    <h5 class="mb-0 fw-bold">@(editandoId == 0 ? "➕ Novo Botijão" : "✏️ Editar Botijão")</h5>
-                </div>
-                <div class="card-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Nome / Marca</label>
-                        <input class="form-control" @bind="produtoForm.Nome" placeholder="Ex: Ultragaz P13" />
+            <div class="sticky-lg-top" style="top: 110px; z-index: 0;">
+                
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h5 class="mb-0 fw-bold">@(editandoId == 0 ? "➕ Novo Botijão" : "✏️ Editar Botijão")</h5>
                     </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nome / Marca</label>
+                            <input class="form-control" @bind="produtoForm.Nome" placeholder="Ex: Ultragaz P13" />
+                        </div>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label fw-bold">Tara (Casco)</label>
-                            <div class="input-group">
-                                <input type="number" step="0.1" class="form-control" @bind="produtoForm.TaraKg" />
-                                <span class="input-group-text">Kg</span>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-bold">Tara (Casco)</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" class="form-control" @bind="produtoForm.TaraKg" />
+                                    <span class="input-group-text">Kg</span>
+                                </div>
+                                <div class="form-text text-primary small">Verifique na alça!</div>
                             </div>
-                            <div class="form-text text-primary small">Verifique na alça!</div>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label fw-bold">Gás Líquido</label>
-                            <div class="input-group">
-                                <input type="number" step="0.1" class="form-control" @bind="produtoForm.CapacidadeTotalKg" />
-                                <span class="input-group-text">Kg</span>
+                            <div class="col-6">
+                                <label class="form-label fw-bold">Gás Líquido</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" class="form-control" @bind="produtoForm.CapacidadeTotalKg" />
+                                    <span class="input-group-text">Kg</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Preço Pago</label>
-                        <div class="input-group">
-                            <span class="input-group-text">R$</span>
-                            <input type="number" step="0.01" class="form-control" @bind="produtoForm.PrecoPago" />
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Preço Pago</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" step="0.01" class="form-control" @bind="produtoForm.PrecoPago" />
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary btn-lg" @onclick="Salvar">
+                                @(editandoId == 0 ? "💾 Cadastrar" : "💾 Salvar Alterações")
+                            </button>
+                            
+                            @if (editandoId != 0)
+                            {
+                                <button class="btn btn-outline-secondary" @onclick="CancelarEdicao">Cancelar</button>
+                            }
                         </div>
                     </div>
-
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-primary btn-lg" @onclick="Salvar">
-                            @(editandoId == 0 ? "💾 Cadastrar" : "💾 Salvar Alterações")
-                        </button>
-                        
-                        @if (editandoId != 0)
-                        {
-                            <button class="btn btn-outline-secondary" @onclick="CancelarEdicao">Cancelar</button>
-                        }
-                    </div>
                 </div>
-            </div>
-            
-            <div class="alert alert-info mt-3 shadow-sm border-0">
-                <small>ℹ️ <strong>Dica de Uso:</strong> A cada troca de botijão, clique em "Editar" no produto ativo e atualize apenas o valor da <strong>Tara</strong> conforme o número estampado na alça do novo botijão.</small>
-            </div>
-        </div>
+                
+                <div class="alert alert-info shadow-sm border-0">
+                    <small>ℹ️ <strong>Dica de Uso:</strong> A cada troca de botijão, clique em "Editar" no produto ativo e atualize apenas o valor da <strong>Tara</strong> conforme o número estampado na alça do novo botijão.</small>
+                </div>
+
+            </div> </div>
     </div>
 </div>
 

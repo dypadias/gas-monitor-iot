@@ -10,39 +10,69 @@
 @if (mostrarModalTroca)
 {
     <div class="modal-backdrop fade show"></div>
-    <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">🔄 Fim do Gás Detectado</h5>
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+                
+                <div class="modal-header text-white @(etapaConfirmacaoTroca ? "bg-success" : "bg-primary") border-0 py-3">
+                    <h5 class="modal-title fw-bold">
+                        @(etapaConfirmacaoTroca ? "💰 Registrar Custo" : "⚠️ Ausência de Gás")
+                    </h5>
                 </div>
+
                 <div class="modal-body p-4 text-center">
-                    <div class="mb-3 text-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-cart-check" viewBox="0 0 16 16">
-                            <path d="M11.354 6.354a.5.5 0 0 0-.708-.708L8 8.293 6.854 7.146a.5.5 0 1 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0l3-3z"/>
-                            <path d="M.5 1a.5.5 0 0 0 0 1h1.11l.401 1.607 1.498 7.985A.5.5 0 0 0 4 12h1a2 2 0 1 0 0 4 2 2 0 0 0 0-4h7a2 2 0 1 0 0 4 2 2 0 0 0 0-4h1a.5.5 0 0 0 .491-.408l1.5-8A.5.5 0 0 0 14.5 3H2.89l-.405-1.621A.5.5 0 0 0 2 1H.5zM6 14a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-                        </svg>
-                    </div>
-                    <p class="lead fw-bold">O seu botijão esvaziou.</p>
-                    <p class="text-muted">Para mantermos o controle financeiro preciso, informe quanto pagou na recarga:</p>
                     
-                    <div class="form-floating mt-4 mb-3">
-                        <input type="number" class="form-control fs-3 fw-bold text-center text-primary" 
-                               @bind="precoNovaTroca" step="0.01" id="precoInput" />
-                        <label for="precoInput">Valor Pago (R$)</label>
-                    </div>
-                </div>
-                <div class="modal-footer justify-content-center bg-light">
-                    <button type="button" class="btn btn-lg btn-primary px-5 rounded-pill shadow-sm" 
-                            @onclick="ConfirmarTroca">
-                        Confirmar Troca & Zerar Ciclo
-                    </button>
+                    @if (!etapaConfirmacaoTroca)
+                    {
+                        // --- FASE 1: PERGUNTA ---
+                        <div class="mb-4">
+                            <span style="font-size: 3rem;">🤔</span>
+                        </div>
+                        <h4 class="fw-bold mb-3">O que aconteceu?</h4>
+                        <p class="text-muted mb-4">
+                            O sistema detectou peso zero. Você trocou o botijão por um novo ou apenas removeu o atual momentaneamente?
+                        </p>
+
+                        <div class="d-grid gap-3">
+                            <button class="btn btn-lg btn-primary shadow-sm" @onclick="() => etapaConfirmacaoTroca = true">
+                                ✅ Sim, coloquei um <strong>NOVO</strong>
+                            </button>
+                            
+                            <button class="btn btn-lg btn-outline-secondary" @onclick="CancelarTroca">
+                                🔧 Não, é o <strong>MESMO</strong> (Manutenção)
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        // --- FASE 2: PREÇO (Só aparece se clicar em SIM) ---
+                        <div class="mb-3 text-success">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-cash-coin" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M11 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm5-4a5 5 0 1 1-10 0 5 5 0 0 1 10 0z"/>
+                                <path d="M9.438 11.944c.047.596.518 1.06 1.363 1.116v.44h.375v-.443c.875-.061 1.386-.529 1.386-1.207 0-.618-.39-.936-1.09-1.1l-.296-.075c-.706-.178-1.433-.487-1.433-1.246 0-.675.56-1.05 1.286-1.125v-.44h.374v.442c.795.056 1.239.423 1.295 1.035h.923c-.052-.964-.693-1.556-1.587-1.685v-.44h-.88v.44c-.952.062-1.543.626-1.543 1.29 0 .626.38.966 1.09 1.135l.296.075c.74.193 1.503.502 1.503 1.258 0 .74-.633 1.173-1.455 1.237v.44h-.374v-.443c-.933-.061-1.524-.595-1.583-1.272h-.924z"/>
+                            </svg>
+                        </div>
+                        <p class="lead fw-bold">Quanto custou a recarga?</p>
+                        
+                        <div class="form-floating mt-4 mb-3">
+                            <input type="number" class="form-control fs-3 fw-bold text-center text-success" 
+                                   @bind="precoNovaTroca" step="0.01" id="precoInput" />
+                            <label for="precoInput">Valor Pago (R$)</label>
+                        </div>
+
+                        <div class="d-flex gap-2 justify-content-center mt-4">
+                            <button class="btn btn-outline-secondary" @onclick="() => etapaConfirmacaoTroca = false">Voltar</button>
+                            <button class="btn btn-success px-5 fw-bold shadow" @onclick="ConfirmarTroca">
+                                Confirmar
+                            </button>
+                        </div>
+                    }
+
                 </div>
             </div>
         </div>
     </div>
 }
-
 @if (ultimaLeitura != null && ultimaLeitura.AlertaVazamento)
 {
     <div class="alerta-vazamento-overlay">
@@ -187,8 +217,8 @@
                                 <strong>@(statsParaDicas?.MediaConsumoDiarioKg.ToString("N2") ?? "0,20") Kg</strong>
                             </div>
                             <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                                <span class="text-muted">ID Sensor</span>
-                                <small class="text-dark text-break">@ultimaLeitura.IdDispositivo</small>
+                                <span class="text-muted">Localização: </span>
+                                <strong class="text-primary">@TraduzirNome(@ultimaLeitura.IdDispositivo)</strong>
                             </div>
                             
                             <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
@@ -279,23 +309,24 @@
 </style>
 
 @code {
-    // Variáveis de Estado
+    // --- Variáveis de Estado ---
     private MedicaoResponse? ultimaLeitura;
-    private EstatisticasResponse? statsParaDicas; // <--- Variável para o SmartAdvisor
+    private EstatisticasResponse? statsParaDicas;
     private string nomeProdutoAtivo = "A carregar...";
     private string mensagemErro = "";
     private bool alertaSilenciado = false;
     
-    // Controle de Tempo
+    // --- Controle de Tempo ---
     private PeriodicTimer? _timer;
     private CancellationTokenSource _cts = new CancellationTokenSource();
 
-    // Controle do Modal de Troca
+    // --- Controle do Modal de Troca (AQUI ESTÁ A MUDANÇA) ---
     private bool mostrarModalTroca = false;
-    private bool trocaJaSolicitada = false;
+    private bool trocaJaSolicitada = false; // Impede que o modal abra repetidamente
+    private bool etapaConfirmacaoTroca = false; // Controla se estamos na Pergunta ou no Preço
     private decimal precoNovaTroca = 0;
 
-    // Inicialização
+    // --- Inicialização ---
     protected override async Task OnInitializedAsync()
     {
         await AtualizarDados();
@@ -303,7 +334,7 @@
         _ = ExecutarLoopAtualizacao();
     }
 
-    // Loop Infinito (Background)
+    // --- Loop Infinito (Background) ---
     private async Task ExecutarLoopAtualizacao()
     {
         try 
@@ -317,43 +348,44 @@
         catch (OperationCanceledException) { /* Normal ao fechar */ }
     }
 
-    // Lógica Central de Dados
+    // --- Lógica Central de Dados ---
     private async Task AtualizarDados()
     {
         try
         {
             mensagemErro = "";
-            
             // 1. Busca Configuração Ativa
             var config = await Http.GetFromJsonAsync<ProdutoConfig>("api/produtos/ativo");
             nomeProdutoAtivo = config?.Nome ?? "Desconhecido";
 
             // 2. Busca Últimas Medições
             var dados = await Http.GetFromJsonAsync<List<MedicaoResponse>>("api/medicoes");
-
             if (dados != null && dados.Count > 0)
             {
                 ultimaLeitura = dados[0];
 
-                // 3. Busca Estatísticas (Para o Smart Advisor)
-                // Usamos try-catch isolado para não bloquear o resto se a estatística falhar
+                // 3. Busca Estatísticas (Com tratamento de erro isolado)
                 try 
                 {
                     statsParaDicas = await Http.GetFromJsonAsync<EstatisticasResponse>("api/estatisticas");
                 } 
                 catch { /* Ignora erro estatístico temporariamente */ }
 
-                // 4. Lógica de Troca de Botijão (Popup)
+                // 4. Lógica de Troca de Botijão (ALTERADO)
                 if (ultimaLeitura.PorcentagemGas <= 0 && !trocaJaSolicitada)
                 {
                     // Sugere o último preço pago
                     precoNovaTroca = config?.PrecoPago ?? 0;
+                    
+                    // Reseta para a "Página 1" (Pergunta) sempre que abrir
+                    etapaConfirmacaoTroca = false; 
+                    
                     mostrarModalTroca = true;
-                    trocaJaSolicitada = true;
+                    trocaJaSolicitada = true; // Marca que já avisamos sobre este fim de gás
                 }
                 else if (ultimaLeitura.PorcentagemGas > 50)
                 {
-                    // Reseta se o botijão estiver cheio novamente
+                    // Se o gás voltar (alguém trocou), resetamos o sistema para avisar na próxima vez que acabar
                     trocaJaSolicitada = false;
                 }
 
@@ -366,22 +398,28 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Erro: {ex.Message}");
-            // Em produção, logamos o erro mas não mostramos na UI durante o loop para evitar "flicker"
         }
     }
 
-    // Ação do Botão do Modal
+    // --- Ação: Confirmou que TROCOU (Salva no banco) ---
     private async Task ConfirmarTroca()
     {
         var novaTroca = new { PrecoPago = precoNovaTroca, NomeProduto = nomeProdutoAtivo };
         
-        // Salva a troca no histórico
+        // Envia para a API registrar no histórico
         await Http.PostAsJsonAsync("api/trocas", novaTroca);
         
         mostrarModalTroca = false;
-        
-        // Força atualização imediata
-        await AtualizarDados();
+        await AtualizarDados(); // Atualiza a tela imediatamente
+    }
+
+    // --- Ação NOVA: É apenas manutenção (Não salva nada) ---
+    private void CancelarTroca()
+    {
+        mostrarModalTroca = false;
+        // Nota: NÃO mudamos 'trocaJaSolicitada' para false aqui.
+        // Se mudássemos, o modal ia abrir de novo no próximo segundo (porque o gás continua a zero).
+        // Ele só vai resetar quando tu colocares um botijão cheio (> 50%).
     }
 
     public void Dispose()
@@ -390,6 +428,19 @@
         _timer?.Dispose();
     }
 
-    // Helper Visual
+    // Helper Visual para cores
     private string ClasseCorStatus(int p) => p < 20 ? "text-danger" : (p < 50 ? "text-warning" : "text-success");
+
+    // --- Função Tradutora de Nomes ---
+    private string TraduzirNome(string idTecnico)
+    {
+        // Aqui você define os apelidos dos seus sensores
+        return idTecnico switch
+        {
+            "ESP32_C3_COZINHA"  => "Cozinha Principal 🍳",
+            "SIMULADOR_CASA_01" => "Simulador (PC) 💻",
+            "ESP32_VARANDA"     => "Área Gourmet bbq",
+            _                   => idTecnico // Se não conhecer, mostra o original
+        };
+    }
 }
