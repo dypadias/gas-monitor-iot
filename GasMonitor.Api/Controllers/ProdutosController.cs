@@ -69,40 +69,42 @@ namespace GasMonitor.Api.Controllers
 
             return Ok(escolhido);
         }
-    }
 
-    // PUT: api/produtos/5
-[HttpPut("{id}")]
-public async Task<IActionResult> AtualizarProduto(int id, ProdutoConfig produto)
-{
-    if (id != produto.Id) return BadRequest();
+        // --- MÉTODOS NOVOS (Dentro da classe!) ---
 
-    var existente = await _contexto.ProdutosConfig.FindAsync(id);
-    if (existente == null) return NotFound();
+        // PUT: api/produtos/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> AtualizarProduto(int id, ProdutoConfig produto)
+        {
+            if (id != produto.Id) return BadRequest();
 
-    // Atualiza os campos
-    existente.Nome = produto.Nome;
-    existente.TaraKg = produto.TaraKg;
-    existente.CapacidadeTotalKg = produto.CapacidadeTotalKg;
-    existente.PrecoPago = produto.PrecoPago;
-    // Não alteramos o 'Ativo' aqui para não causar conflitos
+            var existente = await _contexto.ProdutosConfig.FindAsync(id);
+            if (existente == null) return NotFound();
 
-    await _contexto.SaveChangesAsync();
-    return NoContent();
-}
+            // Atualiza os campos
+            existente.Nome = produto.Nome;
+            existente.TaraKg = produto.TaraKg;
+            existente.CapacidadeTotalKg = produto.CapacidadeTotalKg;
+            existente.PrecoPago = produto.PrecoPago;
+            // Não alteramos o 'Ativo' aqui para não causar conflitos
 
-// DELETE: api/produtos/5
-[HttpDelete("{id}")]
-public async Task<IActionResult> DeletarProduto(int id)
-{
-    var produto = await _contexto.ProdutosConfig.FindAsync(id);
-    if (produto == null) return NotFound();
+            await _contexto.SaveChangesAsync();
+            return NoContent();
+        }
 
-    // Não deixa apagar o produto que está em uso
-    if (produto.Ativo) return BadRequest("Não é possível apagar o produto que está em uso.");
+        // DELETE: api/produtos/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeletarProduto(int id)
+        {
+            var produto = await _contexto.ProdutosConfig.FindAsync(id);
+            if (produto == null) return NotFound();
 
-    _contexto.ProdutosConfig.Remove(produto);
-    await _contexto.SaveChangesAsync();
-    return NoContent();
-}
-}
+            // Não deixa apagar o produto que está em uso
+            if (produto.Ativo) return BadRequest("Não é possível apagar o produto que está em uso.");
+
+            _contexto.ProdutosConfig.Remove(produto);
+            await _contexto.SaveChangesAsync();
+            return NoContent();
+        }
+    } // <--- A CLASSE FECHA AQUI
+} // <--- O NAMESPACE FECHA AQUI
