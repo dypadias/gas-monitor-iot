@@ -180,11 +180,11 @@
                             <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
                                 <span class="text-muted">Peso Bruto</span>
                                 <strong>@ultimaLeitura.PesoTotalKg.ToString("N2") Kg</strong>
-                                
+
                             </div>
                             <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
                                 <span class="text-muted">Média Diária</span>
-                                <strong>@(statsParaDicas?.MediaConsumoDiarioKg.ToString("F3") ?? "0.200") Kg</strong>
+                                <strong>@(statsParaDicas?.MediaConsumoDiarioKg.ToString("N2") ?? "0,20") Kg</strong>
                             </div>
                             <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
                                 <span class="text-muted">ID Sensor</span>
